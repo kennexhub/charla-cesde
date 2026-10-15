@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IA para emprender desde Ayacucho · Vulpis · CEDE CESDE</title>
+<style>
+:root{
+  --bg:#FAF8F4;
+  --ink:#0F172A;
+  --navy:#0F172A;
+  --muted:#46546B;
+  --line:#E7E2D9;
+  --card:#FFFFFF;
+  --orange:#E8490F;
+  --orange-deep:#C2410C;
+  --orange-soft:#FDEAE0;
+  --font:"Segoe UI",Arial,"Helvetica Neue",sans-serif;
+  --mono:Consolas,"Courier New",monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#0E1219;font-family:var(--font);color:var(--ink)}
+img{border:0;display:block}
+svg{display:block}
+
+/* ---------- Pantalla: stage escalable 1920x1080 ---------- */
+.viewport{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0E1219}
+.stage{width:1920px;height:1080px;flex:none;position:relative;background:var(--bg);overflow:hidden;transform-origin:center center;box-shadow:0 30px 90px rgba(0,0,0,.55)}
+.slide{position:absolute;inset:0;opacity:0;visibility:hidden;transition:opacity .45s ease}
+.slide.active{opacity:1;visibility:visible}
+.st{opacity:0;transform:translateY(26px);transition:opacity .5s ease,transform .5s ease}
+.slide.active .st.on{opacity:1;transform:none}
+.abs{position:absolute}
+
+/* ---------- Interfaz del orador ---------- */
+.hud{position:fixed;right:26px;bottom:22px;display:flex;gap:10px;z-index:70}
+.hud .chip{background:rgba(15,23,42,.92);color:#fff;font:700 18px/1 var(--font);padding:9px 16px;border-radius:999px;letter-spacing:.5px;white-space:nowrap}
+.hud .chip.warn{background:var(--orange-deep)}
+.hud-left{position:fixed;left:26px;bottom:22px;z-index:70}
+.hint{background:rgba(15,23,42,.85);color:#C7D0E0;font:600 17px/1.4 var(--font);padding:9px 16px;border-radius:999px;letter-spacing:.4px;white-space:nowrap;transition:opacity .5s ease}
+.hint.hidden{opacity:0;pointer-events:none}
+#timerBox{position:fixed;top:22px;right:26px;z-index:70;display:none;background:rgba(15,23,42,.94);color:#FDBA74;font:700 30px/1 var(--mono);padding:12px 22px;border-radius:14px;letter-spacing:2px}
+#notesPanel{position:fixed;top:0;right:0;bottom:0;width:640px;background:var(--navy);color:#E8EDF7;z-index:80;transform:translateX(102%);transition:transform .3s ease;overflow:auto;padding:34px 32px}
+body.notes-on #notesPanel{transform:none}
+#notesPanel h2{font:800 24px/1.25 var(--font);color:#FDBA74;letter-spacing:.5px}
+#notesPanel .n-tag{display:inline-block;font:700 15px/1 var(--font);color:#fff;background:var(--orange-deep);padding:6px 12px;border-radius:999px;margin:10px 6px 6px 0;letter-spacing:.5px}
+#notesPanel .n-tag.navy{background:#243149;color:#C7D0E0}
+#notesPanel .n-note{margin-top:16px;font:400 21px/1.6 var(--font);color:#EDF1F8;white-space:pre-wrap}
+
+/* ---------- S1 Portada ---------- */
+.deco-orange{position:absolute;top:-230px;right:-170px;width:660px;height:660px;border-radius:50%;background:var(--orange);opacity:.10}
+.s1-kicker{position:absolute;left:120px;top:250px;font:800 34px/1 var(--font);letter-spacing:6px;color:var(--orange-deep);text-transform:uppercase}
+.s1-title{position:absolute;left:116px;top:318px;font:800 104px/1.06 var(--font);color:var(--ink)}
+.s1-title em{font-style:normal;color:var(--orange)}
+.s1-sub{position:absolute;left:122px;top:600px}
+.s1-sub strong{display:block;font:800 40px/1.2 var(--font);color:var(--ink)}
+.s1-sub span{display:block;margin-top:10px;font:600 34px/1.3 var(--font);color:var(--muted)}
+.s1-foot{position:absolute;left:122px;bottom:78px;font:600 30px/1 var(--font);color:var(--muted)}
+.s1-logo{position:absolute;right:120px;top:400px;width:350px;height:160px;background:var(--card);border:1px solid var(--line);border-radius:22px;display:flex;align-items:center;justify-content:center;padding:26px;box-shadow:0 14px 40px rgba(15,23,42,.10)}
+.s1-logo img{max-width:100%;max-height:100%;object-fit:contain}
+
+/* ---------- S2 Rompehielos ---------- */
+.s2-q1{position:absolute;left:0;right:0;top:368px;text-align:center;font:800 92px/1.1 var(--font);color:var(--ink);padding:0 60px}
+.s2-q2{position:absolute;left:0;right:0;top:610px;text-align:center;font:800 92px/1.1 var(--font);color:var(--orange);padding:0 60px}
+
+/* ---------- S3 Qué es la IA ---------- */
+.s3-title{position:absolute;left:0;right:0;top:160px;text-align:center;font:800 72px/1.1 var(--font);color:var(--ink);padding:0 60px}
+.s3-phrase{position:absolute;left:0;right:0;top:300px;text-align:center;font:800 112px/1.05 var(--font);color:var(--ink);padding:0 60px}
+.s3-slot{position:absolute;left:0;right:0;top:478px;height:118px}
+.s3-word{position:absolute;left:0;right:0;top:0;text-align:center;font:800 112px/1.05 var(--font);color:var(--orange)}
+.s3-blank{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);width:500px;height:0;border-bottom:5px dashed #0F172A;opacity:.7;transition:opacity .45s ease}
+.s3-word.on ~ .s3-blank{opacity:0}
+.s3-step2{position:absolute;left:0;right:0;top:648px;text-align:center;font:700 44px/1.15 var(--font);color:var(--ink)}
+.s3-step3{position:absolute;left:0;right:0;top:758px;text-align:center;font:600 40px/1.2 var(--font);color:var(--muted)}
+
+/* ---------- S4 Escepticismo ---------- */
+.s4-title{position:absolute;left:120px;top:84px;font:800 84px/1.1 var(--font);color:var(--ink)}
+.s4-stmt{position:absolute;left:120px;top:268px;font:800 64px/1.1 var(--font);color:var(--ink)}
+.s4-risk{position:absolute;left:120px;top:420px;font:800 64px/1.1 var(--font);color:var(--orange-deep)}
+.s4-cards{position:absolute;left:120px;top:600px;right:120px;display:flex;gap:60px}
+.s4-card{flex:1;background:var(--card);border:2px solid #CBD5E1;border-radius:24px;padding:36px 34px;box-shadow:0 16px 36px rgba(15,23,42,.12)}
+.s4-ico{width:88px;height:88px;border-radius:50%;background:var(--orange-soft);display:flex;align-items:center;justify-content:center}
+.s4-ico svg{width:40px;height:40px;stroke:var(--orange-deep);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.s4-rule{margin-top:22px;font:800 38px/1.22 var(--font);color:var(--ink)}
+.s4-sub{margin-top:12px;font:600 30px/1.3 var(--font);color:var(--muted)}
+
+/* ---------- S5 Mi historia ---------- */
+.deco-orange2{position:absolute;left:-230px;bottom:-260px;width:580px;height:580px;border-radius:50%;background:var(--orange);opacity:.06}
+.s5-title{position:absolute;left:120px;top:84px;font:800 84px/1.08 var(--font);color:var(--ink)}
+.s5-row{position:absolute;left:140px;display:flex;align-items:center;gap:40px}
+.s5-row.r1{top:296px}.s5-row.r2{top:460px}.s5-row.r3{top:624px}
+.s5-num{width:190px;font:800 112px/1 var(--font);color:var(--orange)}
+.s5-txt{font:800 46px/1.15 var(--font);color:var(--ink)}
+.s5-badge{position:absolute;right:120px;top:296px;width:400px;height:394px;background:var(--card);border:2px solid #CBD5E1;border-radius:26px;display:flex;align-items:center;justify-content:center;padding:30px;box-shadow:0 16px 36px rgba(15,23,42,.12)}
+.s5-badge-txt{font:800 52px/1.25 var(--font);color:var(--ink);text-align:center}
+.s5-badge-txt span{color:var(--orange)}
+
+/* ---------- S6 Tres cositas ---------- */
+.s6-title{position:absolute;left:120px;top:84px;font:800 80px/1.1 var(--font);color:var(--ink)}
+.s6-cards{position:absolute;left:120px;top:330px;right:120px;display:flex;gap:60px}
+.s6-card{flex:1;height:430px;background:var(--card);border:2px solid #CBD5E1;border-radius:26px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:38px;box-shadow:0 16px 36px rgba(15,23,42,.12)}
+.s6-ico{width:150px;height:150px;border-radius:50%;background:var(--orange-soft);display:flex;align-items:center;justify-content:center}
+.s6-ico svg{width:64px;height:64px;stroke:var(--orange-deep);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.s6-word{font:800 46px/1.1 var(--font);color:var(--ink);text-align:center;padding:0 20px}
+.s6-rule{position:absolute;left:120px;right:120px;top:840px;height:130px;background:var(--navy);border-radius:26px;display:flex;align-items:center;justify-content:center;padding:0 40px}
+.s6-rule span{font:800 42px/1.15 var(--font);color:#fff;text-align:center}
+
+/* ---------- S7 IA para todos ---------- */
+.s7-title{position:absolute;left:0;right:0;top:400px;text-align:center;font:800 96px/1.08 var(--font);color:var(--ink);padding:0 80px;transition:top .55s ease,font-size .55s ease}
+.s7-title.shrunk{top:84px;font-size:56px}
+.s7-row{position:absolute;left:100px;right:100px;height:150px;background:var(--card);border:2px solid #CBD5E1;border-radius:20px;display:flex;align-items:center;gap:22px;padding:0 26px;box-shadow:0 16px 36px rgba(15,23,42,.12)}
+.s7-rico{width:64px;height:64px;flex:none;border-radius:50%;background:var(--orange-soft);display:flex;align-items:center;justify-content:center}
+.s7-rico svg{width:30px;height:30px;stroke:var(--orange-deep);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.s7-rname{width:470px;flex:none;font:800 36px/1.15 var(--font);color:var(--ink)}
+.s7-blk{flex:1;height:126px;border-radius:16px;padding:14px 22px;display:flex;flex-direction:column;justify-content:center}
+.s7-blk.antes{background:#F2EFE9}
+.s7-blk.ia{background:var(--orange-soft)}
+.s7-lbl{font:800 28px/1 var(--font);letter-spacing:2px}
+.s7-blk.antes .s7-lbl{color:var(--muted)}
+.s7-blk.ia .s7-lbl{color:var(--orange-deep)}
+.s7-txt{margin-top:7px;font:600 34px/1.22 var(--font);color:var(--ink)}
+.s7-arrow{width:40px;height:40px;flex:none;stroke:var(--orange);fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.s7-phrase{position:absolute;left:0;right:0;top:686px;text-align:center;font:700 36px/1.2 var(--font);color:var(--ink)}
+.s7-carreras{position:absolute;left:100px;right:100px;top:740px;display:flex;justify-content:space-between}
+.s7-chip{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 10px}
+.s7-cic{width:24px;height:24px;flex:none;stroke:var(--orange-deep);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.s7-chip span{font:700 28px/1 var(--font);color:var(--ink);white-space:nowrap}
+.s7-tools{position:absolute;left:100px;right:100px;top:830px;height:120px;background:var(--navy);border-radius:24px;display:flex;align-items:center;gap:44px;padding:0 44px}
+body.mode10 .s7-tools{display:none !important}
+.s7-tools-label{width:290px;flex:none;font:800 30px/1.2 var(--font);color:#FDBA74;letter-spacing:2px;text-transform:uppercase}
+.s7-tool{flex:1}
+.s7-tool b{display:block;font:800 30px/1.2 var(--font);color:#fff}
+.s7-tool span{display:block;margin-top:5px;font:600 28px/1.2 var(--font);color:#9FB0C9}
+
+/* ---------- S8 Ayacucho ---------- */
+.s8-title{position:absolute;left:120px;top:84px;font:800 74px/1.1 var(--font);color:var(--ink)}
+.s8-stmt{position:absolute;left:120px;top:224px;font:800 60px/1.1 var(--font);color:var(--orange)}
+.s8-cards{position:absolute;left:120px;top:344px;right:120px;display:flex;gap:60px}
+.s8-card{flex:1;height:430px;background:var(--card);border:2px solid #CBD5E1;border-radius:26px;padding:40px 44px;display:flex;flex-direction:column;justify-content:center;box-shadow:0 16px 36px rgba(15,23,42,.12)}
+.s8-ico{width:84px;height:84px;border-radius:50%;background:var(--orange-soft);display:flex;align-items:center;justify-content:center;margin-bottom:20px}
+.s8-ico svg{width:40px;height:40px;stroke:var(--orange-deep);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.s8-kicker{font:800 30px/1 var(--font);color:var(--muted);letter-spacing:2.5px;text-transform:uppercase}
+.s8-line{margin-top:16px;font:800 40px/1.28 var(--font);color:var(--ink)}
+.s8-close{position:absolute;left:0;right:0;top:862px;text-align:center;font:800 54px/1.1 var(--font);color:var(--ink)}
+.s8-close span{color:var(--orange)}
+
+/* ---------- S9 Portafolio ---------- */
+.s9-title{position:absolute;left:120px;top:84px;font:800 68px/1.1 var(--font);color:var(--ink)}
+.s9-cards{position:absolute;left:120px;top:200px;right:120px;display:flex;gap:60px}
+.s9-card{flex:1;background:var(--card);border:2px solid #CBD5E1;border-radius:26px;padding:20px;box-shadow:0 16px 36px rgba(15,23,42,.12)}
+.s9-shot{position:relative;height:430px;border-radius:16px;overflow:hidden;background:#F2EFE9}
+.s9-shot img{width:100%;height:100%;object-fit:cover}
+.s9-shot img.portrait{object-position:top}
+.s9-shot img.landscape{object-fit:contain;padding:14px}
+.s9-panel{position:absolute;inset:0;background:#FFFFFF;border:1px solid #CBD5E1;border-top:6px solid #C2410C;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px}
+.s9-panel svg{width:96px;height:96px;stroke:var(--orange-deep);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+.s9-lines{width:62%;display:flex;flex-direction:column;align-items:center;gap:12px}
+.s9-lines i{display:block;height:8px;background:#E2E8F0;border-radius:4px}
+.s9-lines i:nth-child(1){width:100%}
+.s9-lines i:nth-child(2){width:72%}
+.s9-lines i:nth-child(3){width:44%}
+.chip{position:absolute;top:14px;left:14px;z-index:3;font:800 28px/1 var(--font);color:#fff;padding:9px 18px;border-radius:999px;letter-spacing:1.5px}
+.chip.demo{background:var(--navy)}
+.chip.live{background:var(--orange-deep)}
+.chip.proto{background:var(--navy)}
+.s9-name{margin-top:22px;font:800 40px/1.1 var(--font);color:var(--ink)}
+.s9-line{margin-top:12px;font:600 32px/1.25 var(--font);color:var(--muted)}
+.s9-phrase{position:absolute;left:0;right:0;top:900px;text-align:center;font:800 52px/1.1 var(--font);color:var(--ink)}
+
+/* ---------- S10 Cierre ---------- */
+.s10-title{position:absolute;left:120px;top:128px;font:800 66px/1.14 var(--font);color:var(--ink)}
+.s10-title em{font-style:normal;color:var(--orange-deep)}
+.s10-sub{position:absolute;left:122px;top:414px}
+.s10-sub p{font:600 38px/1.2 var(--font);color:var(--muted)}
+.s10-sub b{display:block;margin-top:14px;font:800 58px/1.1 var(--font);color:var(--ink)}
+.s10-logo{position:absolute;left:120px;top:656px;width:440px;height:160px;background:var(--card);border:1px solid var(--line);border-radius:22px;display:flex;align-items:center;justify-content:center;padding:26px;box-shadow:0 14px 40px rgba(15,23,42,.09)}
+.s10-logo img{max-width:100%;max-height:100%;object-fit:contain}
+.s10-scan{position:absolute;left:1180px;top:238px;width:640px;text-align:center;font:600 30px/1 var(--font);color:var(--muted)}
+.s10-qr{position:absolute;top:300px;width:300px;height:380px;background:var(--card);border:1px solid var(--line);border-radius:24px;padding:20px;display:flex;flex-direction:column;align-items:center;box-shadow:0 14px 40px rgba(15,23,42,.09)}
+.s10-qr img{width:250px;height:250px;object-fit:contain}
+.s10-qr b{margin-top:22px;font:800 32px/1.2 var(--font);color:var(--ink);text-align:center}
+
+/* ---------- Impresión: una slide por página, estado final ---------- */
+@media print{
+  html,body{width:auto;height:auto;overflow:visible;background:#fff}
+  .viewport{position:static;display:block;background:#fff;overflow:hidden}
+  .stage{position:static;width:auto;height:auto;transform:none !important;box-shadow:none;overflow:visible;background:transparent}
+  .slide{position:relative;inset:auto;width:960px;height:540px;transform:scale(.5);transform-origin:0 0;opacity:1 !important;visibility:visible !important;page-break-after:always;break-after:page;margin:0;background:var(--bg);overflow:visible}
+  .slide:last-child{page-break-after:auto}
+  .st{opacity:1 !important;transform:none !important}
+  .s3-blank{opacity:0 !important}
+  .s7-title{top:84px !important;font-size:56px !important}
+  body.mode10 .s7-tools{display:flex !important}
+  .hud,.hud-left,#timerBox,#notesPanel{display:none !important}
+}
+@page{size:10in 5.625in;margin:0}
+*{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+</style>
+</head>
+<body>
+
+<div class="viewport">
+  <div class="stage" id="stage">
+
+    <!-- S1 PORTADA -->
+    <section class="slide active" id="s1" data-steps="0" data-title="Portada">
+      <div class="deco-orange"></div>
+      <div class="s1-kicker">VULPIS</div>
+      <h1 class="s1-title">IA para emprender<br>desde <em>Ayacucho</em></h1>
+      <div class="s1-sub">
+        <strong>Kenedy Javier Garamendi Lapa</strong>
+        <span>Fundador y Product Lead en Vulpis</span>
+      </div>
+      <div class="s1-foot">Lanzamiento CEDE · CESDE · 15 oct 2026</div>
+      <figure class="s1-logo"><img src="assets/logo-vulpis.jpeg" alt="Logo de Vulpis"></figure>
+    </section>
+
+    <!-- S2 ROMPEHIELOS -->
+    <section class="slide" id="s2" data-steps="2" data-title="Rompehielos">
+      <h2 class="s2-q1">¿Quién usó IA esta semana?</h2>
+      <h2 class="s2-q2 st" data-step="2">¿Y quién la usó para emprender?</h2>
+    </section>
+
+    <!-- S3 ¿QUÉ ES LA IA? RECORTABLE -->
+    <section class="slide recortable" id="s3" data-steps="3" data-title="¿Qué es la IA?">
+      <h2 class="s3-title">La IA adivina la siguiente palabra.</h2>
+      <div class="s3-phrase">Ayacucho, ciudad de las 33</div>
+      <div class="s3-slot">
+        <div class="s3-word st" data-step="2">iglesias</div>
+        <div class="s3-blank"></div>
+      </div>
+      <div class="s3-step2 st" data-step="2">Tú también adivinaste.</div>
+      <div class="s3-step3 st" data-step="3">La IA hace lo mismo, pero leyó millones de textos.</div>
+    </section>
+
+    <!-- S4 ESCEPTICISMO -->
+    <section class="slide" id="s4" data-steps="3" data-title="Escepticismo">
+      <h2 class="s4-title">¿Nos espía? ¿Nos controla?</h2>
+      <div class="s4-stmt st" data-step="2">La IA no tiene intenciones.</div>
+      <div class="s4-risk st" data-step="3">El riesgo real: tus datos y el mal uso.</div>
+      <div class="s4-cards st" data-step="3">
+        <div class="s4-card">
+          <div class="s4-ico"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+          <div class="s4-rule">No compartas datos sensibles</div>
+          <div class="s4-sub">Sin DNI, cuentas ni claves</div>
+        </div>
+        <div class="s4-card">
+          <div class="s4-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5.5"/></svg></div>
+          <div class="s4-rule">Verifica lo que responde</div>
+          <div class="s4-sub">Se equivoca y suena segura</div>
+        </div>
+        <div class="s4-card">
+          <div class="s4-ico"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5.5c0 4.5-3 7.5-7 9.5-4-2-7-5-7-9.5V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
+          <div class="s4-rule">Usa apps y cuentas oficiales</div>
+          <div class="s4-sub">Nada de copias ni enlaces raros</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- S5 MI HISTORIA -->
+    <section class="slide" id="s5" data-steps="0" data-title="Mi historia">
+      <div class="deco-orange2"></div>
+      <h2 class="s5-title">No soy ingeniero.<br>Me atreví a construir.</h2>
+      <div class="s5-row r1">
+        <div class="s5-num">01</div>
+        <div class="s5-txt">Estudiante de Enfermería en Ayacucho</div>
+      </div>
+      <div class="s5-row r2">
+        <div class="s5-num">02</div>
+        <div class="s5-txt">Hackatones y mucho aprendizaje</div>
+      </div>
+      <div class="s5-row r3">
+        <div class="s5-num">03</div>
+        <div class="s5-txt">Conexiones con personas de otros países</div>
+      </div>
+      <div class="s5-badge"><div class="s5-badge-txt">Si yo pude,<br><span>tú también.</span></div></div>
+    </section>
+
+    <!-- S6 TRES COSITAS RECORTABLE -->
+    <section class="slide recortable" id="s6" data-steps="2" data-title="Tres cositas">
+      <h2 class="s6-title">Para crear solo necesitas 3 cosas</h2>
+      <div class="s6-cards">
+        <div class="s6-card">
+          <div class="s6-ico"><svg viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.4 1.1 2.2h5c0-.8.4-1.7 1.1-2.2A6 6 0 0 0 12 3z"/><path d="M9.5 19h5M10.5 21.5h3"/></svg></div>
+          <div class="s6-word">Curiosidad</div>
+        </div>
+        <div class="s6-card">
+          <div class="s6-ico"><svg viewBox="0 0 24 24"><path d="M12 3l2 7 7 2-7 2-2 7-2-7-7-2 7-2z"/></svg></div>
+          <div class="s6-word">Creatividad</div>
+        </div>
+        <div class="s6-card">
+          <div class="s6-ico"><svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h5v18H6a2 2 0 0 0-2 2z"/><path d="M20 5a2 2 0 0 0-2-2h-5v18h5a2 2 0 0 1 2 2z"/></svg></div>
+          <div class="s6-word">Ganas de aprender</div>
+        </div>
+      </div>
+      <div class="s6-rule st" data-step="2"><span>Y una regla: construye, prueba con gente real, pivota.</span></div>
+    </section>
+
+    <!-- S7 IA PARA TODOS -->
+    <section class="slide" id="s7" data-steps="6" data-title="IA para todos">
+      <h2 class="s7-title" id="s7title">¿Cuánto vale una hora de trabajo manual?</h2>
+      <div class="s7-row st" data-step="2" style="top:200px">
+        <div class="s7-rico"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7.5h6M9 12h6M9 16.5h3.5"/></svg></div>
+        <div class="s7-rname">Contabilidad</div>
+        <div class="s7-blk antes"><div class="s7-lbl">ANTES</div><div class="s7-txt">Digitar registros uno por uno</div></div>
+        <svg class="s7-arrow" viewBox="0 0 40 40"><path d="M2 20h28M24 12l8 8-8 8"/></svg>
+        <div class="s7-blk ia"><div class="s7-lbl">CON IA</div><div class="s7-txt">Registros ordenados, tú revisas</div></div>
+      </div>
+      <div class="s7-row st" data-step="3" style="top:370px">
+        <div class="s7-rico"><svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg></div>
+        <div class="s7-rname">Asistencia Administrativa</div>
+        <div class="s7-blk antes"><div class="s7-lbl">ANTES</div><div class="s7-txt">Redactar el mismo oficio de cero</div></div>
+        <svg class="s7-arrow" viewBox="0 0 40 40"><path d="M2 20h28M24 12l8 8-8 8"/></svg>
+        <div class="s7-blk ia"><div class="s7-lbl">CON IA</div><div class="s7-txt">Borrador listo para ajustar</div></div>
+      </div>
+      <div class="s7-row st" data-step="4" style="top:540px">
+        <div class="s7-rico"><svg viewBox="0 0 24 24"><path d="M3 10l17-6v14L3 14v-4z"/><path d="M7 16l1.5 4h2l-.8-4"/></svg></div>
+        <div class="s7-rname">Marketing</div>
+        <div class="s7-blk antes"><div class="s7-lbl">ANTES</div><div class="s7-txt">Quedarte sin ideas de contenido</div></div>
+        <svg class="s7-arrow" viewBox="0 0 40 40"><path d="M2 20h28M24 12l8 8-8 8"/></svg>
+        <div class="s7-blk ia"><div class="s7-lbl">CON IA</div><div class="s7-txt">Varias ideas para elegir</div></div>
+      </div>
+      <div class="s7-phrase st" data-step="5">Y lo mismo en todas las carreras.</div>
+      <div class="s7-carreras st" data-step="5">
+        <div class="s7-chip"><svg class="s7-cic" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7.5h6M9 12h6M9 16.5h3.5"/></svg><span>Contabilidad</span></div>
+        <div class="s7-chip"><svg class="s7-cic" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1H9zM9 11h6M9 15h6"/></svg><span>Gestión</span></div>
+        <div class="s7-chip"><svg class="s7-cic" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg><span>Asistencia</span></div>
+        <div class="s7-chip"><svg class="s7-cic" viewBox="0 0 24 24"><path d="M3 10l17-6v14L3 14v-4z"/><path d="M7 16l1.5 4h2l-.8-4"/></svg><span>Marketing</span></div>
+        <div class="s7-chip"><svg class="s7-cic" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6.5 10h.01M17.5 14h.01"/></svg><span>Banca y Finanzas</span></div>
+        <div class="s7-chip"><svg class="s7-cic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16 5.5a3.5 3.5 0 0 1 0 5"/><path d="M17 13.5a5.5 5.5 0 0 1 4.5 5.5"/></svg><span>RR.HH.</span></div>
+        <div class="s7-chip"><svg class="s7-cic" viewBox="0 0 24 24"><path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11"/></svg><span>Deporte</span></div>
+        <div class="s7-chip"><svg class="s7-cic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M9 20h6M12 16v4"/></svg><span>Cómputo</span></div>
+        <div class="s7-chip"><svg class="s7-cic" viewBox="0 0 24 24"><path d="M12 20.5S4.5 16 3 11.5A4.8 4.8 0 0 1 12 7a4.8 4.8 0 0 1 9 4.5C19.5 16 12 20.5 12 20.5z"/><path d="M5 11.5h3l2-3.5 3 6 2.2-4 1.3 1.5h2"/></svg><span>Enfermería</span></div>
+      </div>
+      <div class="s7-tools st" data-step="6">
+        <div class="s7-tools-label">3 herramientas</div>
+        <div class="s7-tool"><b>Asistente de IA</b><span>ChatGPT, Claude o Gemini</span></div>
+        <div class="s7-tool"><b>NotebookLM</b><span>Para estudiar</span></div>
+        <div class="s7-tool"><b>Canva</b><span>Para diseñar</span></div>
+      </div>
+    </section>
+
+    <!-- S8 AYACUCHO -->
+    <section class="slide" id="s8" data-steps="4" data-title="Ayacucho">
+      <h2 class="s8-title">Ayacucho tiene cultura, tierra y talento.</h2>
+      <div class="s8-stmt st" data-step="2">Nos falta digitalizar.</div>
+      <div class="s8-cards st" data-step="3">
+        <div class="s8-card">
+          <div class="s8-ico"><svg viewBox="0 0 24 24"><path d="M5 19C5 9 12 4 20 4c0 8-5 15-15 15z"/><path d="M5 19c4-4.5 7.5-7.5 11-10.5"/></svg></div>
+          <div class="s8-kicker">Cooperativas agrarias</div>
+          <div class="s8-line">Catálogo en línea</div>
+          <div class="s8-line">Pedidos por WhatsApp</div>
+          <div class="s8-line">Inventario al día</div>
+        </div>
+        <div class="s8-card">
+          <div class="s8-ico"><svg viewBox="0 0 24 24"><path d="M4 9l2-5h12l2 5"/><path d="M4 9a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0"/><path d="M5.5 11.5V20h13v-8.5"/><path d="M9.5 20v-5h5v5"/></svg></div>
+          <div class="s8-kicker">Artesanía y turismo</div>
+          <div class="s8-line">Venta en línea</div>
+          <div class="s8-line">Atención 24/7</div>
+        </div>
+      </div>
+      <div class="s8-close st" data-step="4">No hay que irse para construir. <span>Se puede desde aquí.</span></div>
+    </section>
+
+    <!-- S9 PORTAFOLIO -->
+    <section class="slide" id="s9" data-steps="4" data-title="Portafolio">
+      <h2 class="s9-title">Un proceso manual, convertido en sistema.</h2>
+      <div class="s9-cards">
+        <div class="s9-card st" data-step="1">
+          <figure class="s9-shot">
+            <span class="chip demo">DEMO</span>
+            <img src="assets/bot-demo.jpeg" alt="Captura del bot de atención de Vulpis" class="portrait">
+          </figure>
+          <div class="s9-name">Bot de atención</div>
+          <div class="s9-line">Atención y ventas por WhatsApp</div>
+        </div>
+        <div class="s9-card st" data-step="2">
+          <figure class="s9-shot">
+            <span class="chip live">EN VIVO</span>
+            <img src="assets/lease-abstractor.jpeg" alt="Captura de Lease Abstractor" class="landscape">
+          </figure>
+          <div class="s9-name">Lease Abstractor</div>
+          <div class="s9-line">Resume contratos de arriendo</div>
+        </div>
+        <div class="s9-card st" data-step="3">
+          <figure class="s9-shot">
+            <span class="chip proto">PROTOTIPO</span>
+            <div class="s9-panel">
+              <svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>
+              <div class="s9-lines"><i></i><i></i><i></i></div>
+            </div>
+          </figure>
+          <div class="s9-name">Protokol</div>
+          <div class="s9-line">Convierte procesos en documentos</div>
+        </div>
+      </div>
+      <div class="s9-phrase st" data-step="4">Tres problemas distintos, la misma idea.</div>
+    </section>
+
+    <!-- S10 CIERRE -->
+    <section class="slide" id="s10" data-steps="0" data-title="Cierre">
+      <h2 class="s10-title">Elige <em>UNA</em> tarea<br>y pruébala con IA.</h2>
+      <div class="s10-sub">
+        <p>¿Tienes un negocio o un proceso que te quita horas?</p>
+        <b>Construyámoslo.</b>
+      </div>
+      <figure class="s10-logo"><img src="assets/logo-vulpis.jpeg" alt="Logo de Vulpis"></figure>
+      <div class="s10-scan">Escanea con tu celular</div>
+      <figure class="s10-qr" style="left:1180px">
+        <img src="assets/qr-vulpis.png" alt="Código QR de Vulpis">
+        <b>Conoce Vulpis</b>
+      </figure>
+      <figure class="s10-qr" style="left:1520px">
+        <img src="assets/qr-kenny.jpeg" alt="Código QR de contacto del orador">
+        <b>Escríbeme</b>
+      </figure>
+    </section>
+
+  </div>
+</div>
+
+<div class="hud" id="hudRight">
+  <div class="chip" id="counter">SLIDE 1 / 10</div>
+  <div class="chip warn" id="chipRecortable" style="display:none">RECORTABLE</div>
+  <div class="chip warn" id="chipMode" style="display:none">MODO 10 MIN</div>
+</div>
+<div class="hud-left"><div class="hint" id="hintBar">flechas / espacio: navegar · N: notas · T: tiempo · M: modo 10 min · F: pantalla completa</div></div>
+<div id="timerBox">00:00</div>
+<aside id="notesPanel">
+  <div id="notesBody"></div>
+</aside>
+
+<script>
+(function(){
+  "use strict";
+  var slides = Array.prototype.slice.call(document.querySelectorAll(".slide"));
+  var stage = document.getElementById("stage");
+  var counter = document.getElementById("counter");
+  var chipRecortable = document.getElementById("chipRecortable");
+  var chipMode = document.getElementById("chipMode");
+  var notesBody = document.getElementById("notesBody");
+  var timerBox = document.getElementById("timerBox");
+
+  var cur = 0, step = 0, mode10 = false;
+  var t0 = null, timerShown = false, tick = null;
+
+  var NOTES = {
+"s1": "Tiempo: 20 segundos\n\nBuenos días a todos. Un saludo al Dr. Eddy Yuncaccallo, a la Econ. Miriam Allapacca, al Ing. Aníbal Prado, a los docentes y, sobre todo, a ustedes, estudiantes. Gracias al CESDE por esta invitación y felicitaciones por el lanzamiento del Centro de Emprendimiento. Soy Kenedy Garamendi, Kenny para los amigos. Vivo y construyo aquí, en Ayacucho, y vengo a contarles algo simple: la inteligencia artificial ya no es cosa de ingenieros. Es para todos. [PAUSA] Y esta charla empieza con una pregunta. Vamos.",
+"s2": "Tiempo: 1 minuto 30 segundos\n\nLevanten la mano, sin miedo, esto no tiene nota. ¿Quién usó IA esta semana? [PREGUNTA AL PÚBLICO] [REACCIONA a las manos que veas, con naturalidad] Para una tarea, una receta, una imagen o un trámite, la IA ya está en su vida. [PAUSA] Ahora la segunda pregunta, y esta es la importante: ¿quién la usó para emprender? [PREGUNTA AL PÚBLICO] Fíjense cuántas manos quedan. Ese es el punto de hoy: la diferencia entre usar la IA y vivir de la IA. Para lograrlo primero hay que entender qué es, y qué no es. Vamos a lo básico.",
+"s3": "Tiempo: 1 minuto · RECORTABLE: se omite en modo 10 min\n\nVamos a descubrir qué es la IA con un juego. Completen en voz alta: Ayacucho, ciudad de las 33... [PAUSA, deja que respondan] ¡Iglesias! Eso es exactamente lo que hace la IA: adivina la siguiente palabra. Ustedes lo hicieron porque han escuchado esa frase mil veces. La IA leyó millones de textos, y por eso puede escribir un correo, resumir un contrato o responderle a un cliente. No piensa ni siente: adivina, muy bien. [PAUSA] Esta idea nació en los años 50, en 2022 llegó a todos, y hoy está en tu celular. Entonces, si es solo eso, ¿por qué hay tanto miedo? Hablemos con honestidad.",
+"s4": "Tiempo: 1 minuto 45 segundos\n\nHablemos sin maquillaje. ¿Nos espía? ¿Nos controla? Son preguntas válidas. [PAUSA] La IA no tiene intenciones. No es mala ni buena. Es una herramienta, como un cuchillo: sirve para cocinar o para hacer daño, depende de la mano. [PAUSA] El riesgo real no es la máquina: es el uso que otros le den a tus datos. Por eso les dejo tres reglas que yo aplico. [PAUSA] Uno: no compartas datos sensibles. Dos: verifica lo que responde, la IA se equivoca y encima lo dice con seguridad. Tres: usa apps y cuentas oficiales. Con esas tres reglas reduces mucho el riesgo y la herramienta trabaja para ti. Y saben qué: yo llegué a esto sin ser ingeniero. Les cuento cómo.",
+"s5": "Tiempo: 1 minuto 45 segundos\n\nYo no soy ingeniero. Estudio Enfermería aquí, en Ayacucho. Sé que aquí también hay futuros técnicos de Enfermería: esto también es para ustedes. [PAUSA] Todo empezó con curiosidad: probé una herramienta, me hice mil preguntas y me metí a hackatones. Ahí aprendí más que en cualquier curso: construyendo, equivocándome y corrigiendo. [PAUSA] Y lo más valioso que gané no fue código, fueron conexiones: hoy converso con personas de otros países que construyen cosas reales, y todo empezó con un mensaje. [PAUSA] Si yo pude, sin título de ingeniero y desde Ayacucho, ustedes también pueden. Y no necesitan diez cosas para empezar. Solo tres.",
+"s6": "Tiempo: 1 minuto 15 segundos · RECORTABLE: se omite en modo 10 min\n\nLa receta es corta. Para crear con IA solo necesitas tres cosas. [PAUSA] Curiosidad, para preguntar sin miedo. Creatividad, para imaginar soluciones que otros no ven. Y ganas de aprender, todos los días un poquito. [PAUSA] Y una regla de oro: construye, prueba con gente real y pivota. No funciona a la primera, y está bien. Eso es emprender. Ahora veamos qué significa esto para cada carrera de este instituto.",
+"s7": "Tiempo: 1 minuto 45 segundos · Modo 10 min: se oculta la franja de herramientas\n\nHagamos un cálculo rápido. ¿Cuánto vale una hora de su trabajo? [PAUSA] Ahora piensen en las horas que se van en tareas repetitivas. Un contador digitando registros. Una asistente administrativa redactando el mismo oficio una y otra vez. Alguien de marketing que no sabe qué publicar hoy. [PAUSA] Con IA, esa tarea se convierte en un borrador que ustedes revisan y mejoran. El criterio sigue siendo suyo. [PAUSA] Y no es solo para ellos: banca, recursos humanos, deporte, cómputo y enfermería también tienen tareas repetitivas. En Enfermería, material educativo y organización; la IA no diagnostica, eso es de los profesionales. [PAUSA] Para empezar solo necesitan tres herramientas: un asistente de IA, como ChatGPT, Claude o Gemini; NotebookLM para estudiar; y Canva para diseñar. Todo desde el celular.",
+"s8": "Tiempo: 1 minuto 45 segundos\n\nAyacucho tiene cultura, tierra y talento. De eso no hay duda. [PAUSA] Lo que nos falta es digitalizar. Y no hablo de comprar sistemas caros, hablo de empezar con lo que ya usamos. [PAUSA] Imaginen una cooperativa agraria con catálogo en línea, pedidos por WhatsApp e inventario al día, sin papel. Imaginen la artesanía y el turismo de Ayacucho vendiendo y atendiendo las 24 horas, aunque ustedes duerman. [PAUSA] Eso ya se puede construir desde aquí, y es justo el tipo de solución que construimos en Vulpis. No hay que irse para construir: se puede desde aquí. [PUENTE QORI: una frase conectando con lo que acaba de contar el Ing. Aníbal, adaptada en vivo] Déjenme mostrarles ejemplos reales.",
+"s9": "Tiempo: 2 minutos\n\nEn Vulpis no solo hacemos chatbots: construimos soluciones a medida. La pregunta siempre es la misma: ¿qué proceso te quita horas? [PAUSA] Primer ejemplo: un bot de atención. Una demostración de cómo un negocio responde y vende por WhatsApp sin demoras. [PAUSA] Segundo: Lease Abstractor, en vivo. Un sistema que resume contratos de arriendo en segundos, un trabajo que antes tomaba horas de lectura. [PAUSA] Tercero: Protokol, un prototipo para ordenar protocolos de obras viales y generar el documento en PDF. Lo estamos probando y afinando. [PAUSA] Tres problemas distintos, una sola idea: convertir lo manual en sistema. Y ahora, lo que ustedes pueden hacer esta misma semana.",
+"s10": "Tiempo: 1 minuto\n\nLes dejo un reto para esta semana. [PAUSA] Elijan UNA tarea que les quite tiempo, una sola, y pruébenla con IA. No la perfecta, no la enorme: una tarea real. [PAUSA] Y si tienen un negocio o un proceso que les roba horas, vengan y lo construimos juntos en Vulpis. Aquí tienen los códigos QR: con el primero conocen Vulpis, con el segundo me escriben. [PAUSA] Y si al instituto le interesa, con gusto armamos un taller práctico de IA para emprendedores. Gracias al CESDE, gracias a ustedes. Nos vemos construyendo."
+  };
+
+  function visible(){
+    return slides.filter(function(s){ return !(mode10 && s.classList.contains("recortable")); });
+  }
+  function effMax(s){
+    var m = parseInt(s.getAttribute("data-steps") || "0", 10);
+    if (mode10 && s.id === "s7") m = Math.min(m, 5);
+    return m;
+  }
+  function render(){
+    var vs = visible();
+    var s = vs[cur];
+    slides.forEach(function(el, i){
+      el.classList.toggle("active", el === s);
+      var els = el.querySelectorAll(".st");
+      Array.prototype.forEach.call(els, function(st){
+        st.classList.toggle("on", el === s && parseInt(st.getAttribute("data-step"), 10) <= step);
+      });
+    });
+    var t7 = s.querySelector(".s7-title");
+    if (t7) t7.classList.toggle("shrunk", step >= 2);
+    var idx = slides.indexOf(s) + 1;
+    counter.textContent = "SLIDE " + idx + " / 10";
+    chipRecortable.style.display = s.classList.contains("recortable") ? "block" : "none";
+    chipMode.style.display = mode10 ? "block" : "none";
+    var html = "<h2>" + s.getAttribute("data-title") + " · S" + idx + "</h2>";
+    if (s.classList.contains("recortable")) html += '<span class="n-tag">RECORTABLE · se omite en modo 10 min</span>';
+    if (mode10) html += '<span class="n-tag navy">MODO 10 MIN ACTIVO</span>';
+    html += '<div class="n-note">' + NOTES[s.id] + "</div>";
+    notesBody.innerHTML = html;
+  }
+  function go(i){
+    var vs = visible();
+    cur = Math.max(0, Math.min(i, vs.length - 1));
+    step = 0;
+    render();
+  }
+  function next(){
+    var s = visible()[cur];
+    if (step < effMax(s)) { step++; render(); }
+    else go(cur + 1);
+  }
+  function prev(){
+    if (step > 0) { step--; render(); }
+    else go(cur - 1);
+  }
+  function setMode10(on){
+    mode10 = on;
+    document.body.classList.toggle("mode10", on);
+    var vs = visible();
+    if (!vs[cur]) cur = Math.min(cur, vs.length - 1);
+    step = Math.min(step, effMax(vs[cur]));
+    render();
+  }
+  function toggleTimer(){
+    if (t0 === null){
+      t0 = Date.now();
+      tick = setInterval(updateTimer, 500);
+    }
+    timerShown = !timerShown;
+    timerBox.style.display = timerShown ? "block" : "none";
+    updateTimer();
+  }
+  function updateTimer(){
+    if (t0 === null) return;
+    var e = Date.now() - t0;
+    var m = Math.floor(e / 60000);
+    var s = Math.floor((e % 60000) / 1000);
+    timerBox.textContent = (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s;
+  }
+  function fit(){
+    var s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+    stage.style.transform = "scale(" + s + ")";
+  }
+  document.addEventListener("keydown", function(e){
+    var k = e.key;
+    if (k === "ArrowRight" || k === "PageDown" || k === " "){
+      e.preventDefault(); next(); return;
+    }
+    if (k === "ArrowLeft" || k === "PageUp"){
+      e.preventDefault(); prev(); return;
+    }
+    if (k === "Home"){ e.preventDefault(); go(0); return; }
+    if (k === "End"){ e.preventDefault(); go(visible().length - 1); return; }
+    if (k === "n" || k === "N"){ document.body.classList.toggle("notes-on"); return; }
+    if (k === "t" || k === "T"){ toggleTimer(); return; }
+    if (k === "m" || k === "M"){ setMode10(!mode10); return; }
+    if (k === "f" || k === "F"){
+      if (document.fullscreenElement){ if (document.exitFullscreen) document.exitFullscreen(); }
+      else if (document.documentElement.requestFullscreen){ document.documentElement.requestFullscreen(); }
+      return;
+    }
+  });
+  window.addEventListener("resize", fit);
+  var hintEl = document.getElementById("hintBar");
+  setTimeout(function(){ hintEl.classList.add("hidden"); }, 4000);
+  document.addEventListener("fullscreenchange", function(){
+    if (document.fullscreenElement) hintEl.classList.add("hidden");
+  });
+  fit();
+  render();
+})();
+</script>
+</body>
+</html>
